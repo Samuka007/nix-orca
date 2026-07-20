@@ -62,6 +62,13 @@ jobs:
         if: steps.update.outputs.changed == 'true'
         run: nix build .#orca-ide
 
+      - name: Allow the FHS wrapper to create a user namespace
+        if: steps.update.outputs.changed == 'true'
+        run: |
+          if [[ -e /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+
       - name: Smoke-test Orca CLI
         if: steps.update.outputs.changed == 'true'
         run: timeout 30s ./result/bin/orca-ide --help
