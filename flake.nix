@@ -25,6 +25,8 @@
         }
       );
 
+      formatter = forAllSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
+
       overlays.default = final: _prev: {
         orca-ide = final.callPackage ./package.nix { };
       };

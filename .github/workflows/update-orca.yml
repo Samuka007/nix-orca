@@ -1,0 +1,83 @@
+name: Update Orca
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable Orca version to install (for example, 1.4.137); leave empty for latest
+        required: false
+        type: string
+  repository_dispatch:
+    types:
+      - orca-release
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-orca
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      # The updater validates every replacement before changing files; keep that guard before PR creation.
+      # Pull requests created with GITHUB_TOKEN do not recursively trigger PR workflows, so this run validates the candidate itself.
+      - name: Update Orca package
+        id: update
+        env:
+          MANUAL_VERSION: ${{ inputs.version }}
+          DISPATCH_VERSION: ${{ github.event.client_payload.version }}
+        run: |
+          version="${MANUAL_VERSION:-${DISPATCH_VERSION:-}}"
+          if [[ -n "$version" ]]; then
+            python3 scripts/update-orca.py --version "$version"
+          else
+            python3 scripts/update-orca.py
+          fi
+
+      - name: Install Nix
+        if: steps.update.outputs.changed == 'true'
+        uses: cachix/install-nix-action@v31
+
+      - name: Check Nix formatting
+        if: steps.update.outputs.changed == 'true'
+        run: nix fmt -- --ci flake.nix package.nix
+
+      - name: Check flake on all systems
+        if: steps.update.outputs.changed == 'true'
+        run: nix flake check --all-systems
+
+      - name: Build Orca IDE
+        if: steps.update.outputs.changed == 'true'
+        run: nix build .#orca-ide
+
+      - name: Smoke-test Orca CLI
+        if: steps.update.outputs.changed == 'true'
+        run: timeout 30s ./result/bin/orca-ide --help
+
+      - name: Create or update pull request
+        if: steps.update.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ github.token }}
+          branch: automation/update-orca
+          commit-message: Update Orca to ${{ steps.update.outputs.version }}
+          title: Update Orca to ${{ steps.update.outputs.version }}
+          body: |
+            Updates the stable Orca package to `${{ steps.update.outputs.version }}`.
+
+            The updater and all CI checks completed successfully before this pull request was created.
+          add-paths: |
+            package.nix
+            README.md

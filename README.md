@@ -2,7 +2,7 @@
 
 [Orca](https://github.com/stablyai/orca) 是用于并行运行和管理编码代理的桌面应用。本仓库提供基于 Orca 官方二进制发布的 Nix flake。
 
-当前打包版本：`1.4.137`
+当前打包版本：`1.4.146`
 
 ## 支持平台
 
@@ -67,8 +67,27 @@ nix flake check --all-systems
 检查 Nix 文件格式：
 
 ```bash
-nixfmt --check flake.nix package.nix
+nix fmt -- --ci flake.nix package.nix
 ```
+
+## 自动跟踪稳定版
+
+更新工作流每小时检查一次上游稳定版，也可在 GitHub Actions 页面手动运行并通过可选的 `version` 输入指定版本。它还接受类型为 `orca-release` 的 `repository_dispatch` 事件；可选的 `client_payload.version` 用于指定版本，省略时检查最新稳定版。更新器只处理稳定版本，并直接使用 GitHub release asset 的 `digest` 更新各平台哈希，不跟踪预发布版本。
+
+发现更新后，工作流会先验证修改，再执行构建和 CLI 冒烟测试；全部通过后才从固定分支 `automation/update-orca` 创建或更新 PR。若使用 `GITHUB_TOKEN` 创建 PR，需要在仓库的 **Settings → Actions → General → Workflow permissions** 中启用 **Allow GitHub Actions to create and approve pull requests**。
+
+GitHub Actions 没有原生的跨仓库 release 事件。若希望接近实时地响应 `stablyai/orca` 发布，需要另行配置外部 GitHub App 或服务，在检测到发布后向本仓库发送 `repository_dispatch`；本仓库不假定该外部监听器已经配置。例如，可使用对 `Samuka007/nix-orca` 有访问权限且授予 **Contents: write** 的 fine-grained token：
+
+```bash
+curl --fail-with-body --request POST \
+  --url https://api.github.com/repos/Samuka007/nix-orca/dispatches \
+  --header "Accept: application/vnd.github+json" \
+  --header "Authorization: Bearer <FINE_GRAINED_GITHUB_TOKEN>" \
+  --header "X-GitHub-Api-Version: 2022-11-28" \
+  --data '{"event_type":"orca-release","client_payload":{"version":"1.4.138"}}'
+```
+
+`client_payload.version` 可省略，此时工作流检查最新稳定版。
 
 ## Binary cache
 

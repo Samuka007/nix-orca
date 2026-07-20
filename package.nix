@@ -10,21 +10,21 @@
 
 let
   pname = "orca-ide";
-  version = "1.4.137";
+  version = "1.4.146";
   system = stdenv.hostPlatform.system;
 
   sources = {
     x86_64-linux = {
       url = "https://github.com/stablyai/orca/releases/download/v${version}/orca-linux.AppImage";
-      hash = "sha256-jHQSL6aTSnZEZgsKT7HxyXZppQwatUgiF1UPzR4fyZg=";
+      hash = "sha256-/DQnU0U4XyOAxYX7J81gCJP2OgaLxTARr4kUpvqdT8k=";
     };
     aarch64-linux = {
       url = "https://github.com/stablyai/orca/releases/download/v${version}/orca-linux-arm64.AppImage";
-      hash = "sha256-4ItSuYxCdK7cXFe3vL30q5FrxKo1bmBvarUUrvCWswY=";
+      hash = "sha256-ZmnwdLtJU59Ck6l27oo1OSLOtUW5OX/hUkx5bCG35rc=";
     };
     aarch64-darwin = {
       url = "https://github.com/stablyai/orca/releases/download/v${version}/Orca-${version}-arm64-mac.zip";
-      hash = "sha256-+r7P0ovH9mHVuDbae8THD2+rDqUaiVhFXbb92wUqss4=";
+      hash = "sha256-CQ2QgpBJWcOCyrrlmrrgSIH2F7a7em/mnziEqy/pu4Q=";
     };
   };
 
