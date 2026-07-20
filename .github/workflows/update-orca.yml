@@ -87,4 +87,3 @@ jobs:
             The updater and all CI checks completed successfully before this pull request was created.
           add-paths: |
             package.nix
-            README.md

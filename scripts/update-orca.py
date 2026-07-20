@@ -35,7 +35,7 @@ class UpdateError(Exception):
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Update package.nix and README.md to an Orca stable release."
+        description="Update package.nix to an Orca stable release."
     )
     parser.add_argument(
         "--version",
@@ -214,15 +214,6 @@ def update_package(text: str, version: str, hashes: dict[str, str]) -> str:
     return updated
 
 
-def update_readme(text: str, version: str) -> str:
-    current_version_pattern = re.compile(
-        r"(?m)^(当前打包版本：[ \t]*`)[0-9]+\.[0-9]+\.[0-9]+(`[ \t]*)(?=\r?$)"
-    )
-    return replace_exactly_once(
-        text, current_version_pattern, version, "README current-version line"
-    )
-
-
 def read_utf8(path: Path) -> tuple[bytes, str]:
     try:
         original = path.read_bytes()
@@ -285,25 +276,12 @@ def run(args: argparse.Namespace) -> tuple[str, bool]:
 
     repository = Path(__file__).resolve().parents[1]
     package_path = repository / "package.nix"
-    readme_path = repository / "README.md"
     package_bytes, package_text = read_utf8(package_path)
-    readme_bytes, readme_text = read_utf8(readme_path)
-
-    # Build and validate both complete replacements before staging either file.
     new_package = update_package(package_text, version, hashes).encode("utf-8")
-    new_readme = update_readme(readme_text, version).encode("utf-8")
 
-    updates = [
-        (path, new_content)
-        for path, old_content, new_content in (
-            (package_path, package_bytes, new_package),
-            (readme_path, readme_bytes, new_readme),
-        )
-        if old_content != new_content
-    ]
-    if updates:
-        write_atomically(updates)
-    changed = bool(updates)
+    changed = package_bytes != new_package
+    if changed:
+        write_atomically([(package_path, new_package)])
     append_github_output(version, changed)
     return version, changed
 

@@ -2,8 +2,6 @@
 
 [Orca](https://github.com/stablyai/orca) 是用于并行运行和管理编码代理的桌面应用。本仓库提供基于 Orca 官方二进制发布的 Nix flake。
 
-当前打包版本：`1.4.146`
-
 ## 支持平台
 
 | 平台 | 上游产物 | 状态 |
